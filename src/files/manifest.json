@@ -1,0 +1,13 @@
+{
+    "name": "3Dplitka Assistant",
+    "description": "Helps content managers of the tile department in their work",
+    "version": "1.0",
+    "manifest_version": 3,
+    "icons": {
+    },
+    "action": {
+        "default_popup": "popup.html"
+    },
+    "permissions": ["scripting", "activeTab"],
+    "background": {}
+}
