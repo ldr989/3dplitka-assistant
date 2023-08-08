@@ -5,6 +5,7 @@ import imagesTiles from "./modules/images-tiles.js";
 import autoClickBtnAll from "./modules/auto-click-btn-all.js";
 import autoClickBtn from "./modules/auto-click-btn.js";
 import openForm from "./modules/open-form.js";
+import properties from "./modules/properties.js";
 
 
 
@@ -21,3 +22,4 @@ imagesTiles(
     () => autoClickBtn('.grp-add-handler'),
     () => openForm('#plumbing-image-content_type-object_id-group')
     );
+properties();
