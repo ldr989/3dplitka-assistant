@@ -5,6 +5,7 @@ function properties() {
         list = document.querySelector('[name="properties-list"]'),
         addProp = document.querySelector('.add-prop-to-template'),
         template = document.querySelector('.template'),
+            ol = template.querySelector('ol'),
             li = template.querySelector('ol li');
 
     addBtn.addEventListener('click', () => {
@@ -21,7 +22,16 @@ function properties() {
 
     function createBoolean() {
         const boolean = document.createElement('div');
-        boolean.innerHTML = '<ul class="properties-value-radio"><li><input type="radio" value="true"> Да</input></li><li><input type="radio" value="false"> Нет</input></li></ul>';
+        boolean.innerHTML = `
+            <ul class="properties-value-radio">
+                <li>
+                    <input type="radio" value="true"> Да
+                </li>
+                <li>
+                    <input type="radio" value="false"> Нет
+                </li>
+            </ul>
+        `;
         boolean.classList.add('properies-boolean');
         function uncheckInputs() {
             boolean.querySelectorAll('input[type="radio"]').forEach(input => {
@@ -87,6 +97,38 @@ function properties() {
         li.insertBefore(ul, addProp);
     }
 
+    function getPropValue() {
+        if (document.querySelector('.properies-boolean')) {
+            const booleanInputs = document.querySelectorAll('.properties-value-radio li input');
+            const checkedInput = Array.from(booleanInputs).find(input => input.checked);
+            if (checkedInput) {
+                if (checkedInput.value === 'true') {
+                    return 'Да';
+                } else {
+                    return 'Нет';
+                }
+            }
+
+        } else if (document.querySelector('.properies-input')) {
+            return document.querySelector('.properies-input').value;
+        } else if (document.querySelector('.properies-select')) {
+            return getSelectedOption(document.querySelector('.properies-select'));
+        } else if (document.querySelector('.properties-ul')) {
+            const checkedChekboxes = document.querySelectorAll('.properties-ul input[type=checkbox]:checked');
+            let resultString = '';
+            checkedChekboxes.forEach(chekbox => {
+                resultString += `, ${chekbox.parentNode.textContent}`;
+            });
+            return resultString;
+        }
+    }
+    function getSelectedOption(selectElem) {
+        
+        const selectedIndex = selectElem.selectedIndex,
+            selectedOption = selectElem.options[selectedIndex];
+
+        return selectedOption.textContent;
+    }
     function startListener() {
         list.addEventListener('change', () => {
             if (list.value == 5261) {
@@ -263,10 +305,29 @@ function properties() {
                     removeProperiesValueForm();
                     createBoolean();
                     break;
+                case '': // ---------
+                    removeProperiesValueForm();
+                    break;
                 default: 
                     removeProperiesValueForm();
                     createInput();
             }
+            
+        });
+    }
+    if (document.querySelector('.add-prop-to-template')) {
+        const addPropBtn = document.querySelector('.add-prop-to-template');
+        addPropBtn.addEventListener('click', () => {
+            const newPropListItem = document.createElement('li'),
+                templateOl = template.querySelector('ol');
+            let propValue = getPropValue();
+                
+
+            newPropListItem.textContent = `
+                ${getSelectedOption(list)} : ${propValue}
+            `;
+            templateOl.insertBefore(newPropListItem, templateOl.lastElementChild);
+            
         });
     }
 }
