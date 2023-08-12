@@ -9,6 +9,8 @@ import properties from "./modules/properties.js";
 
 
 
+
+
 header('.tabs_images', '.tabs_properties', '.menu_properties', '.menu_images');
 imagesCollections(
     '.btn_add-collection-form',
