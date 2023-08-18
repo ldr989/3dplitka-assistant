@@ -3,7 +3,14 @@ import saveHtmlChanges from "./saveHtmlChanges.js";
 import startListener from "./startListener.js";
 import showBlock from "./showBlock.js";
 
-const properties = function () {
+// [Ilya]: it's better to name functions as verbs, properties -> buildProperties or renderProperties
+// some useful links:
+// https://github.com/airbnb/javascript
+// https://medium.com/wix-engineering/naming-convention-8-basic-rules-for-any-piece-of-code-c4c5f65b0c09
+function properties() {
+    // [Ilya]: use variable keyword for each declaration:
+    // const addBtn ...
+    // const list ...
     const addBtn = document.querySelector('.template_change'),
         list = document.querySelector('[name="properties-list"]'),
         addProp = document.querySelector('.add-prop-to-template'),
@@ -17,34 +24,29 @@ const properties = function () {
         if (savedHtmlContent) {
 
             document.querySelector('.htmlContent').innerHTML = savedHtmlContent;
-            
+
+            // [Ilya]: make sure to create and use at the end of code execution oposite function to remove all listeners,
+            // to prevent posible memory leak
             startListener(
                 document.querySelector('[name="properties-list"]'), 
                 'change', 
                 () => switchProps(document.querySelector('[name="properties-list"]')
             ));
-
             startListener(document.querySelector('.add-prop-to-template'), 'click', addingPropListToTemplate);
-            
+            // [Ilya]: why not to use startListener here?
             document.querySelector('.template ol').addEventListener('click', (e) => {
                 const target = e.target;
                 if (target && target.classList.contains('delFromTemplate')) {
-                    const valueCode = target.parentNode.textContent.slice(0, 4);
                     target.parentNode.remove();
-                    delete proplistInTemp[valueCode];
-                    console.log(proplistInTemp);
-                    savePropTempToLocalStorage();
                     saveHtmlChanges();
                 }
             });
         }
     });
 
-    let proplistInTemp = {};
 
-    if (localStorage.getItem('propTemplate')) {
-        proplistInTemp = getPropTempFromLocalStorage();
-    }
+    // [Ilya]: you can use const here
+    let proplistInTemp = {};
     
     startListener(addBtn, 'click', () => showBlock(template));
     startListener(list, 'change', () => switchProps(list));
@@ -83,6 +85,8 @@ const properties = function () {
     }
 
     function removeProperiesValueForm() {
+        // [Ilya]: this whole function is very performance inefficient, you call document.querySelector twice for every selector
+        // but could call it once and store Node ina variable
         if (document.querySelector('.properies-boolean')) {
             document.querySelector('.properies-boolean').remove();
             if (document.querySelector('.add-prop-to-template').classList.contains('warn')) {
@@ -115,6 +119,7 @@ const properties = function () {
         select.classList.add('properies-select');
         for (let i = 0; i <= elem.length; i++) {
             let option = document.createElement('option');
+            // [Ilya]: strict comparison always: ===
             if (i == 0) {
                 option.textContent = '---------';
                 option.setAttribute("value", "");
@@ -147,8 +152,10 @@ const properties = function () {
     function getPropValue() {
         if (document.querySelector('.properies-boolean')) {
             const booleanInputs = document.querySelectorAll('.properties-value-radio li input');
+            // [Ilya]: I would use [...booleanInputs].find(input => input.checked)
             const checkedInput = Array.from(booleanInputs).find(input => input.checked);
             if (checkedInput) {
+                // [Ilya]: could be a one line: return checkedInput.value === 'true' ? 'Да' : 'Нет'
                 if (checkedInput.value === 'true') {
                     return 'Да';
                 } else {
@@ -175,6 +182,18 @@ const properties = function () {
         return selectedOption.textContent;
         
     }
+    // [Ilya]: Another and more readable way to discribe multy branching logic is to use dictinary of functions
+    // Switch is a bad practice, at least on projects I've worked. The greatest way is to use factory or strategy pattern here
+    // but simple functions list will do too:
+    //
+    // const createFormInuts = {
+    //  '5261': () => {
+    //                   removeProperiesValueForm();
+    //                   createBoolean();
+    //                 },
+    //  '5188': () => {}...
+    // }
+    //
     function switchProps(item) {
         
         switch (item.value) {
@@ -349,30 +368,19 @@ const properties = function () {
                 createInput();
         }
     }
-    function savePropTempToLocalStorage() {
-        localStorage.setItem('propTemplate', JSON.stringify(proplistInTemp));
-    }
-    function getPropTempFromLocalStorage() {
-        return JSON.parse(localStorage.getItem('propTemplate'));
-    }
+
     function addingPropListToTemplate() {
-        const newPropListItem = document.createElement('li'),
-            delFromTemplate = document.createElement('button'),
-            templateOl = document.querySelector('.template ol'),
-            propList = document.querySelector('[name="properties-list"]');
-        let propValue = '';
+        // [Ilya]: try to avoid sevral function calls in if statements, here you could store result of getPropValue()
+        // at the beginnig, check it's value and use or rewrite value after
+        if (getPropValue() !== undefined && getPropValue() !== '' && getPropValue() !== '---------') {
+            const newPropListItem = document.createElement('li'),
+                delFromTemplate = document.createElement('button'),
+                templateOl = document.querySelector('.template ol');
+            let propValue = getPropValue();
 
-        if (getPropValue() === undefined) {
-            propValue = '';
-        } else if (getPropValue() === '---------') {
-            propValue = '';
-        } else {
-            propValue = getPropValue();
-        }
-
-        if (propList.value !== '' && !(propList.value in proplistInTemp)) {
-            
-            newPropListItem.textContent = `${propList.value} ${getSelectedOption(propList)} : ${propValue}`;
+            newPropListItem.textContent = `
+                ${getSelectedOption(document.querySelector('[name="properties-list"]'))} : ${propValue}
+                `;
             delFromTemplate.textContent = 'Удалить';
             delFromTemplate.classList.add('delFromTemplate');
 
@@ -382,10 +390,6 @@ const properties = function () {
             if (document.querySelector('.add-prop-to-template').classList.contains('warn')) {
                 document.querySelector('.add-prop-to-template').classList.remove('warn');
             }
-
-            proplistInTemp[propList.value] = propValue;
-            savePropTempToLocalStorage();
-            console.log(proplistInTemp);
         } else {
             document.querySelector('.add-prop-to-template').classList.add('warn');
         }
@@ -397,13 +401,8 @@ const properties = function () {
     }
     ol.addEventListener('click', (e) => {
         const target = e.target;
-        
         if (target && target.classList.contains('delFromTemplate')) {
-            const valueCode = target.parentNode.textContent.slice(0, 4);
-            
             target.parentNode.remove();
-            delete proplistInTemp[valueCode];
-            savePropTempToLocalStorage();
             saveHtmlChanges();
         }
     });
