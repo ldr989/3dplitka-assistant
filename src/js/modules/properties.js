@@ -161,18 +161,18 @@ const properties = function () {
             return getSelectedOption(document.querySelector('.properies-select'));
         } else if (document.querySelector('.properties-ul')) {
             const checkedChekboxes = document.querySelectorAll('.properties-ul input[type=checkbox]:checked');
-            let resultString = '';
+            let result = [];
             checkedChekboxes.forEach(chekbox => {
-                resultString += `, ${chekbox.parentNode.textContent}`;
+                result.push(`${chekbox.value} ${chekbox.parentNode.textContent.trim()}`);
             });
-            return resultString;
+            return result.join(', ');
         }
     }
     function getSelectedOption(selectElem) {
         
         const selectedIndex = selectElem.selectedIndex,
             selectedOption = selectElem.options[selectedIndex];
-        return selectedOption.textContent;
+        return `${selectElem.value} ${selectedOption.textContent}`;
         
     }
     function switchProps(item) {
@@ -355,6 +355,46 @@ const properties = function () {
     function getPropTempFromLocalStorage() {
         return JSON.parse(localStorage.getItem('propTemplate'));
     }
+
+    function checkPropOnPage() {
+        // const allPropsOnPage = document.querySelectorAll(
+        //     '[id^="id_plumbing-attributevalue-content_type-object_id-"]' +
+        //     '[id$="-attribute"]' +
+        //     ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-attribute"])'
+        //     ).value;
+        const allPropsOnPageValues = document.querySelectorAll(
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' +
+            '[id$="-value"]' +
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-value"])'
+        );
+        const listOfPropsFromTemp = Object.keys(proplistInTemp);
+        
+        const propsOnPageList = {};
+        const filteredPropList = [];
+
+        const allPropsOnPage = [4278, 4279, 4281, 4282, 4287, 4288, 4289, 4359, 4360, 4361, 4881];
+        // allPropsOnPage.forEach(item => {
+        //     propsOnPageList[item] = '';
+        // });
+
+        listOfPropsFromTemp.forEach(prop => {
+            if (!allPropsOnPage.includes(+prop)) {
+                filteredPropList.push(+prop);
+            }
+        });
+
+        const listOfPropToAdd = filteredPropList.reduce((acc, prop) => {
+            if (proplistInTemp.hasOwnProperty(prop)) {
+                acc[prop] = proplistInTemp[prop];
+            }
+            return acc;
+        }, {});
+
+        console.log(`список свойств которых нехватает: ${filteredPropList}`);
+        console.log(`список свойств на странице ${allPropsOnPage}`);
+        console.log(listOfPropToAdd);
+    }
+    checkPropOnPage();
     function addingPropListToTemplate() {
         const newPropListItem = document.createElement('li'),
             delFromTemplate = document.createElement('button'),
@@ -372,7 +412,7 @@ const properties = function () {
 
         if (propList.value !== '' && !(propList.value in proplistInTemp)) {
             
-            newPropListItem.textContent = `${propList.value} ${getSelectedOption(propList)} : ${propValue}`;
+            newPropListItem.textContent = `${getSelectedOption(propList)} : ${propValue}`;
             delFromTemplate.textContent = 'Удалить';
             delFromTemplate.classList.add('delFromTemplate');
 
@@ -408,6 +448,6 @@ const properties = function () {
         }
     });
     
-}
+};
 
 export default properties;
