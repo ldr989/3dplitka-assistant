@@ -51,23 +51,25 @@ const properties = function () {
     
     function createInput() {
         const input = document.createElement('input');
-        input.classList.add('properies-input');
+        input.classList.add('properties-value');
         document.querySelector('.template ol').lastElementChild.insertBefore(input, document.querySelector('.add-prop-to-template'));
     }
 
-    function createBoolean(parent, frontElement) {
-        const boolean = document.createElement('div');
+    function createBoolean() {
+        const boolean = document.createElement('ul');
         boolean.innerHTML = `
-            <ul class="properties-value-radio">
-                <li>
+            <li>
+                <label>
                     <input type="radio" value="true"> Да
-                </li>
-                <li>
-                    <input type="radio" value="false"> Нет
-                </li>
-            </ul>
+                </label>
+            </li>
+            <li>
+                <label>
+                    <input type="radio" value="true"> Нет
+                </label>
+            </li>
         `;
-        boolean.classList.add('properies-boolean');
+        boolean.classList.add('properties-value');
 
         boolean.querySelectorAll('input[type="radio"]').forEach(input => {
             input.addEventListener('change', (e) => {
@@ -82,37 +84,9 @@ const properties = function () {
         document.querySelector('.template ol').lastElementChild.insertBefore(boolean, document.querySelector('.add-prop-to-template'))
     }
 
-    function removeProperiesValueForm() {
-        if (document.querySelector('.properies-boolean')) {
-            document.querySelector('.properies-boolean').remove();
-            if (document.querySelector('.add-prop-to-template').classList.contains('warn')) {
-                document.querySelector('.add-prop-to-template').classList.remove('warn');
-            }
-        } else if (document.querySelector('.properies-input')) {
-            document.querySelector('.properies-input').remove();
-            if (document.querySelector('.add-prop-to-template').classList.contains('warn')) {
-                document.querySelector('.add-prop-to-template').classList.remove('warn');
-            }
-        } else if (document.querySelector('.properies-select')) {
-            document.querySelector('.properies-select').remove();
-            if (document.querySelector('.add-prop-to-template').classList.contains('warn')) {
-                document.querySelector('.add-prop-to-template').classList.remove('warn');
-            }
-        } else if (document.querySelector('.properties-ul')) {
-            document.querySelector('.properties-ul').remove();
-            if (document.querySelector('.add-prop-to-template').classList.contains('warn')) {
-                document.querySelector('.add-prop-to-template').classList.remove('warn');
-            }
-        } else {
-            if (document.querySelector('.add-prop-to-template').classList.contains('warn')) {
-                document.querySelector('.add-prop-to-template').classList.remove('warn');
-            }
-        }
-    }
-
     function createSelect(...elem) {
         const select = document.createElement('select');
-        select.classList.add('properies-select');
+        select.classList.add('properties-value');
         for (let i = 0; i <= elem.length; i++) {
             let option = document.createElement('option');
             if (i == 0) {
@@ -130,7 +104,7 @@ const properties = function () {
 
     function createChekboxForm(...elem) {
         const ul = document.createElement('ul');
-        ul.classList.add('properties-ul');
+        ul.classList.add('properties-value');
         for (let i = 1; i <= elem.length; i++) {
             const li = document.createElement('li');
             li.innerHTML = `
@@ -143,51 +117,58 @@ const properties = function () {
         }
         document.querySelector('.template ol').lastElementChild.insertBefore(ul, document.querySelector('.add-prop-to-template'))
     }
-
-    function getPropValue() {
-        if (document.querySelector('.properies-boolean')) {
-            const booleanInputs = document.querySelectorAll('.properties-value-radio li input');
-            const checkedInput = Array.from(booleanInputs).find(input => input.checked);
-            if (checkedInput) {
-                if (checkedInput.value === 'true') {
-                    return 'Да';
-                } else {
-                    return 'Нет';
-                }
-            }
-        } else if (document.querySelector('.properies-input')) {
-            return document.querySelector('.properies-input').value;
-        } else if (document.querySelector('.properies-select')) {
-            return getSelectedOption(document.querySelector('.properies-select'));
-        } else if (document.querySelector('.properties-ul')) {
-            const checkedChekboxes = document.querySelectorAll('.properties-ul input[type=checkbox]:checked');
-            let result = [];
-            checkedChekboxes.forEach(chekbox => {
-                result.push(`${chekbox.value} ${chekbox.parentNode.textContent.trim()}`);
-            });
-            return result.join(', ');
+    
+    function removeClass(item, itemClass) {
+        if (item.classList.contains(itemClass)) {
+            item.classList.remove(itemClass);
         }
     }
-    function getSelectedOption(selectElem) {
+
+    function removePropertiesValueForm() {
+        const valueBlock = document.querySelector('.properties-value');
+        const addProp = document.querySelector('.add-prop-to-template');
         
-        const selectedIndex = selectElem.selectedIndex,
-            selectedOption = selectElem.options[selectedIndex];
-        return `${selectElem.value} ${selectedOption.textContent}`;
-        
+        if (valueBlock) {
+            valueBlock.remove();
+            removeClass(addProp, 'warn');
+        } else {
+            removeClass(addProp, 'warn');
+        }
     }
+    
+    function getValue(elem) {
+        if (elem.nodeName === 'SELECT') {
+                return `${elem.value} ${elem.selectedOptions[0].text}`;
+            } else if (elem.nodeName === 'UL') {
+                const checkedInputs = elem.querySelectorAll('input:checked');
+
+                if (checkedInputs.length === 1) {
+                    return `${checkedInputs[0].value} ${checkedInputs[0].parentNode.textContent.trim()}`;
+                } else {
+                    let listOfValues = [];
+                    checkedInputs.forEach(item => {
+                        listOfValues.push(`${item.value} ${item.parentNode.textContent.trim()}`);
+                    });
+                    return listOfValues.join(', ');
+                }
+            } else {
+                return elem.value;
+            }
+    }
+
     function switchProps(item) {
         
         switch (item.value) {
             case '5261': // Бабочка
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createBoolean();
                 break;
             case '5188': // Вариативность цвета
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createSelect('V18934', 'V28858', 'V38859', 'V48860');
                 break;
             case '5242': // Влагопоглощаемость
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createSelect(
                     'Группа BIa – влагопоглощение – Eb ≤ 0,5%9359',
                     'Группа BIb – влагопоглощение 0,5% < Eb ≤ 3%9360',
@@ -197,7 +178,7 @@ const properties = function () {
                 );
                 break;
             case '5074': // Износостойкость PEI
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createSelect(
                     '08283',
                     '18284',
@@ -208,14 +189,14 @@ const properties = function () {
                 );
                 break;
             case '4933': // Количество цветов
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createChekboxForm(
                     ' Моноколор8052',
                     ' Микс8054'
                 );
                 break;
             case '4286': // Материал
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createSelect(
                     'Керамика6351',
                     'Керамогранит6352',
@@ -237,15 +218,15 @@ const properties = function () {
                 );
                 break;
             case '4935': // Микс
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createBoolean();
                 break;
             case '4293': // Морозоустойчивость
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createBoolean();
                 break;
             case '4284': // Обработка
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createChekboxForm(
                     ' структурированная6347',
                     ' натуральная6345',
@@ -259,7 +240,7 @@ const properties = function () {
                 );
                 break;
             case '4283': // Отражение поверхности
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createSelect(
                     'Глянцевая6340',
                     'Матовая6341',
@@ -270,7 +251,7 @@ const properties = function () {
                 );
                 break;
             case '4285': // Покрытие
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createSelect(
                     'Глазурованная6349',
                     'Неглазурованная6350',
@@ -278,15 +259,15 @@ const properties = function () {
                 );
                 break;
             case '4950': // Противоскользящая
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createBoolean();
                 break;
             case '5346': // С капиносом
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createBoolean();
                 break;
             case '5073': // Сопротивление скольжению
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createSelect(
                     'R 98278',
                     'R 108279',
@@ -296,7 +277,7 @@ const properties = function () {
                 );
                 break;
             case '4934': // Тип скрепления
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createChekboxForm(
                     ' на сетке8053',
                     ' на полимерной сцепке8075',
@@ -304,7 +285,7 @@ const properties = function () {
                 );
                 break;
             case '5377': // Тональная вариация
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createSelect(
                     'выраженная9929',
                     'минимальная9930',
@@ -314,7 +295,7 @@ const properties = function () {
                 );
                 break;
             case '5381': // Устойчивость к образованию пятен
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createSelect(
                     'Класс 19935',
                     'Класс 29936',
@@ -324,7 +305,7 @@ const properties = function () {
                 );
                 break;
             case '4929': // Форма чипа у мозаики
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createChekboxForm(
                     ' арабески / фигурная8056',
                     ' восьмиугольник / octogonal8048',
@@ -338,14 +319,14 @@ const properties = function () {
                 );
                 break;
             case '4928': // Чипы разного размера у мозаики
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createBoolean();
                 break;
             case '': // ---------
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 break;
             default:
-                removeProperiesValueForm();
+                removePropertiesValueForm();
                 createInput();
         }
     }
@@ -356,63 +337,67 @@ const properties = function () {
         return JSON.parse(localStorage.getItem('propTemplate'));
     }
 
-    function checkPropOnPage() {
-        // const allPropsOnPage = document.querySelectorAll(
-        //     '[id^="id_plumbing-attributevalue-content_type-object_id-"]' +
-        //     '[id$="-attribute"]' +
-        //     ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-attribute"])'
-        //     ).value;
+    function getPropListFromPage() {
+        const allPropsOnPage = document.querySelectorAll(
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' +
+            '[id$="-attribute"]' +
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-attribute"])'
+            );
         const allPropsOnPageValues = document.querySelectorAll(
             '[id^="id_plumbing-attributevalue-content_type-object_id-"]' +
             '[id$="-value"]' +
             ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-value"])'
         );
-        const listOfPropsFromTemp = Object.keys(proplistInTemp);
         
         const propsOnPageList = {};
+        
+        
+        allPropsOnPage.forEach((prop, i) => {
+            propsOnPageList[prop.value] = allPropsOnPageValues[i];
+        });
+        
         const filteredPropList = [];
 
-        const allPropsOnPage = [4278, 4279, 4281, 4282, 4287, 4288, 4289, 4359, 4360, 4361, 4881];
         // allPropsOnPage.forEach(item => {
         //     propsOnPageList[item] = '';
         // });
 
-        listOfPropsFromTemp.forEach(prop => {
-            if (!allPropsOnPage.includes(+prop)) {
-                filteredPropList.push(+prop);
-            }
-        });
-
-        const listOfPropToAdd = filteredPropList.reduce((acc, prop) => {
-            if (proplistInTemp.hasOwnProperty(prop)) {
-                acc[prop] = proplistInTemp[prop];
-            }
-            return acc;
-        }, {});
-
-        console.log(`список свойств которых нехватает: ${filteredPropList}`);
-        console.log(`список свойств на странице ${allPropsOnPage}`);
-        console.log(listOfPropToAdd);
     }
-    checkPropOnPage();
+
+    // const listOfPropsFromTemp = Object.keys(proplistInTemp);
+    // listOfPropsFromTemp.forEach(prop => {
+    //     if (!allPropsOnPage.includes(+prop)) {
+    //         filteredPropList.push(+prop);
+    //     }
+    // });
+    // const listOfPropToAdd = filteredPropList.reduce((acc, prop) => {
+    //     if (proplistInTemp.hasOwnProperty(prop)) {
+    //         acc[prop] = proplistInTemp[prop];
+    //     }
+    //     return acc;
+    // }, {});
+    
     function addingPropListToTemplate() {
         const newPropListItem = document.createElement('li'),
             delFromTemplate = document.createElement('button'),
             templateOl = document.querySelector('.template ol'),
-            propList = document.querySelector('[name="properties-list"]');
+            propList = document.querySelector('[name="properties-list"]'),
+            propValueBlock = document.querySelector('.properties-value');
         let propValue = '';
 
-        if (getPropValue() === undefined) {
+        if (getValue(propValueBlock) === undefined) {
             propValue = '';
-        } else if (getPropValue() === '---------') {
+            getValue(propValueBlock);
+        } else if (getValue(propValueBlock) === '---------') {
             propValue = '';
+            getValue(propValueBlock);
         } else {
-            propValue = getPropValue();
+            propValue = getValue(propValueBlock);
         }
 
         if (propList.value !== '' && !(propList.value in proplistInTemp)) {
             
-            newPropListItem.textContent = `${getSelectedOption(propList)} : ${propValue}`;
+            newPropListItem.textContent = `${propList.value} ${propList.selectedOptions[0].text} : ${propValue}`;
             delFromTemplate.textContent = 'Удалить';
             delFromTemplate.classList.add('delFromTemplate');
 
