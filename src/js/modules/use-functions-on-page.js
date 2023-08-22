@@ -1,4 +1,4 @@
-function useFunctionsOnPage(anyFunction) {
+function useFunctionsOnPage(anyFunction, ...args) {
     //Функция запускает функцию для изменения элементов на странице
     // где anyFunction это нужная функция
     chrome.tabs.query({ active: true }, (tabs) => {
@@ -7,7 +7,8 @@ function useFunctionsOnPage(anyFunction) {
             chrome.scripting.executeScript(
                 {
                     target: { tabId: tab.id, allFrames: true },
-                    func: anyFunction
+                    func: anyFunction,
+                    args: args
                 },
             );
         } else {

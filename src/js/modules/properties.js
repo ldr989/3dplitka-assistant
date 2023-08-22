@@ -2,13 +2,17 @@ import propertiesList from "./propertiesList.js";
 import saveHtmlChanges from "./saveHtmlChanges.js";
 import startListener from "./startListener.js";
 import showBlock from "./showBlock.js";
+import useFunctionsOnPageSeveralTimes from "./use-function-on-page-several-times.js";
+import useFunctionsOnPage from "./use-functions-on-page.js";
+import getFunctionResultFromPage from "./getFunctionResultFromPage.js";
 
 const properties = function () {
     const addBtn = document.querySelector('.template_change'),
         list = document.querySelector('[name="properties-list"]'),
         addProp = document.querySelector('.add-prop-to-template'),
         template = document.querySelector('.template'),
-            ol = template.querySelector('ol');
+        ol = template.querySelector('ol'),
+        findPropOnPage = document.querySelector('.properties__find-prop');
     
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -37,11 +41,21 @@ const properties = function () {
                     saveHtmlChanges();
                 }
             });
+
+
+            document.querySelector('.properties__find-prop').addEventListener('click', () => {
+
+                getFunctionResultFromPage(getPropListFromPage)
+                    .then(function (result) {
+                        console.log(getMissingPropsList(result));
+                    }).catch(function (error) {
+                        console.log(error);
+                    });
+            });
         }
     });
 
     let proplistInTemp = {};
-
     if (localStorage.getItem('propTemplate')) {
         proplistInTemp = getPropTempFromLocalStorage();
     }
@@ -155,7 +169,6 @@ const properties = function () {
                 return elem.value;
             }
     }
-
     function switchProps(item) {
         
         switch (item.value) {
@@ -348,34 +361,58 @@ const properties = function () {
             '[id$="-value"]' +
             ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-value"])'
         );
+
+        // позже доработать добавление этой функции в качестве аргумента
+        function getValue(elem) {
+            if (elem.nodeName === 'SELECT') {
+                return `${elem.value} ${elem.selectedOptions[0].text}`;
+            } else if (elem.nodeName === 'UL') {
+                const checkedInputs = elem.querySelectorAll('input:checked');
+
+                if (checkedInputs.length === 1) {
+                    return `${checkedInputs[0].value} ${checkedInputs[0].parentNode.textContent.trim()}`;
+                } else {
+                    let listOfValues = [];
+                    checkedInputs.forEach(item => {
+                        listOfValues.push(`${item.value} ${item.parentNode.textContent.trim()}`);
+                    });
+                    return listOfValues.join(', ');
+                }
+            } else {
+                return elem.value;
+            }
+        }
         
         const propsOnPageList = {};
         
-        
         allPropsOnPage.forEach((prop, i) => {
-            propsOnPageList[prop.value] = allPropsOnPageValues[i];
+            propsOnPageList[prop.value] = getValue(allPropsOnPageValues[i]);
         });
+
         
-        const filteredPropList = [];
+        return propsOnPageList;
+    }
+    
+    function getMissingPropsList(propList) {
+        const listOfPropsFromTemp = Object.keys(proplistInTemp),
+            allPropsOnPage = Object.keys(propList),
+            filteredPropList = [];
+        
+        listOfPropsFromTemp.forEach(prop => {
+            if (!allPropsOnPage.includes(prop)) {
+                filteredPropList.push(+prop);
+            }
+        });
 
-        // allPropsOnPage.forEach(item => {
-        //     propsOnPageList[item] = '';
-        // });
-
+        return filteredPropList.reduce((acc, prop) => {
+            if (proplistInTemp.hasOwnProperty(prop)) {
+                acc[prop] = proplistInTemp[prop];
+            }
+            return acc;
+        }, {});
     }
 
-    // const listOfPropsFromTemp = Object.keys(proplistInTemp);
-    // listOfPropsFromTemp.forEach(prop => {
-    //     if (!allPropsOnPage.includes(+prop)) {
-    //         filteredPropList.push(+prop);
-    //     }
-    // });
-    // const listOfPropToAdd = filteredPropList.reduce((acc, prop) => {
-    //     if (proplistInTemp.hasOwnProperty(prop)) {
-    //         acc[prop] = proplistInTemp[prop];
-    //     }
-    //     return acc;
-    // }, {});
+
     
     function addingPropListToTemplate() {
         const newPropListItem = document.createElement('li'),
@@ -432,6 +469,17 @@ const properties = function () {
             saveHtmlChanges();
         }
     });
+    
+    findPropOnPage.addEventListener('click', () => {
+        
+        getFunctionResultFromPage(getPropListFromPage)
+            .then(function(result){
+                console.log(getMissingPropsList(result));
+            }).catch(function(error) {
+                console.log(error);
+            });
+    });
+    
     
 };
 
