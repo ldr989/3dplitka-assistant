@@ -5,16 +5,18 @@ function getFunctionResultFromPage(anyFunction, ...args) {
         chrome.tabs.query({ active: true }, (tabs) => {
             const tab = tabs[0];
             if (tab) {
-                chrome.scripting.executeScript(
-                    {
-                        target: { tabId: tab.id, allFrames: true },
-                        func: anyFunction,
-                        args: args
-                    },
-                    (result) => {
-                        resolve(result[0].result);
-                    }
-                );
+                setTimeout(() => { 
+                    chrome.scripting.executeScript(
+                        {
+                            target: { tabId: tab.id, allFrames: true },
+                            func: anyFunction,
+                            args: args
+                        },
+                        (result) => {
+                            resolve(result[0].result);
+                        }
+                    );
+                }, 1000);
             } else {
                 reject("There are no active tabs");
             }

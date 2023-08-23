@@ -12,7 +12,8 @@ const properties = function () {
         addProp = document.querySelector('.add-prop-to-template'),
         template = document.querySelector('.template'),
         ol = template.querySelector('ol'),
-        findPropOnPage = document.querySelector('.properties__find-prop');
+        findPropOnPage = document.querySelector('.properties__find-prop'),
+        addPropsFormOnPage = document.querySelector('.properties__add-prop-form');
     
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -37,7 +38,7 @@ const properties = function () {
                     target.parentNode.remove();
                     delete proplistInTemp[valueCode];
                     console.log(proplistInTemp);
-                    savePropTempToLocalStorage();
+                    savePropTempToLocalStorage('propTemplate', proplistInTemp);
                     saveHtmlChanges();
                 }
             });
@@ -47,17 +48,36 @@ const properties = function () {
 
                 getFunctionResultFromPage(getPropListFromPage)
                     .then(function (result) {
-                        console.log(getMissingPropsList(result));
+                        missingPropsList = getMissingPropsList(result);
+                        savePropTempToLocalStorage('missingPropList', missingPropsList);
+                        console.log(missingPropsList);
                     }).catch(function (error) {
                         console.log(error);
                     });
+            });
+
+            document.querySelector('.properties__add-prop-form').addEventListener('click', () => {
+                const missingProps = Object.keys(getPropTempFromLocalStorage('missingPropList'));
+
+                
+                (async function () {
+                    for (let i = 0; i <= missingProps.length; i++) {
+                        await getFunctionResultFromPage(addPropToPage, missingProps[i]);
+                    }
+                })();
             });
         }
     });
 
     let proplistInTemp = {};
+    let missingPropsList = {};
+
     if (localStorage.getItem('propTemplate')) {
-        proplistInTemp = getPropTempFromLocalStorage();
+        proplistInTemp = getPropTempFromLocalStorage('propTemplate');
+    }
+
+    if (localStorage.getItem('missingPropList')) {
+        missingPropsList = getPropTempFromLocalStorage('missingPropList');
     }
     
     startListener(addBtn, 'click', () => showBlock(template));
@@ -74,12 +94,12 @@ const properties = function () {
         boolean.innerHTML = `
             <li>
                 <label>
-                    <input type="radio" value="true"> Да
+                    <input type="radio" value="True"> Да
                 </label>
             </li>
             <li>
                 <label>
-                    <input type="radio" value="true"> Нет
+                    <input type="radio" value="False"> Нет
                 </label>
             </li>
         `;
@@ -150,8 +170,9 @@ const properties = function () {
         }
     }
     
-    function getValue(elem) {
-        if (elem.nodeName === 'SELECT') {
+    function getValue(elem, codeWithText = true) {
+        if (codeWithText) {
+            if (elem.nodeName === 'SELECT') {
                 return `${elem.value} ${elem.selectedOptions[0].text}`;
             } else if (elem.nodeName === 'UL') {
                 const checkedInputs = elem.querySelectorAll('input:checked');
@@ -168,7 +189,39 @@ const properties = function () {
             } else {
                 return elem.value;
             }
+        } else {
+            if (elem.nodeName === 'SELECT') {
+                if (elem.value === '') {
+                    return '';
+                } else {
+                    return +elem.value;
+                }
+            } else if (elem.nodeName === 'UL') {
+                const checkedInputs = elem.querySelectorAll('input:checked');
+
+                if (checkedInputs.length === 1) {
+                    if (checkedInputs[0].value === 'True') {
+                        return true;
+                    } else if (checkedInputs[0].value > 1) {
+                        return +checkedInputs[0].value;
+                    } else {
+                        return false;
+                    }
+                } else if (checkedInputs.length > 1) {
+                    let listOfValues = [];
+                    checkedInputs.forEach(item => {
+                        listOfValues.push(+item.value);
+                    });
+                    return listOfValues;
+                } else {
+                    return '';
+                }
+            } else {
+                return elem.value;
+            }
+        }
     }
+
     function switchProps(item) {
         
         switch (item.value) {
@@ -343,11 +396,13 @@ const properties = function () {
                 createInput();
         }
     }
-    function savePropTempToLocalStorage() {
-        localStorage.setItem('propTemplate', JSON.stringify(proplistInTemp));
+
+    function savePropTempToLocalStorage(name, object) {
+        localStorage.setItem(name, JSON.stringify(object));
     }
-    function getPropTempFromLocalStorage() {
-        return JSON.parse(localStorage.getItem('propTemplate'));
+    
+    function getPropTempFromLocalStorage(name) {
+        return JSON.parse(localStorage.getItem(name));
     }
 
     function getPropListFromPage() {
@@ -394,25 +449,26 @@ const properties = function () {
     }
     
     function getMissingPropsList(propList) {
-        const listOfPropsFromTemp = Object.keys(proplistInTemp),
-            allPropsOnPage = Object.keys(propList),
-            filteredPropList = [];
-        
-        listOfPropsFromTemp.forEach(prop => {
-            if (!allPropsOnPage.includes(prop)) {
-                filteredPropList.push(+prop);
+        const listOfPropsFromTemp = Object.keys(proplistInTemp), // list of props from Template
+            allPropsOnPage = Object.keys(propList), // list of props from page
+            filteredPropList = []; // a list of property names to be added will be stored here
+        function convertValue() {
+
+        }
+        listOfPropsFromTemp.forEach(prop => { // getting the names of the properties to be added
+            if (!allPropsOnPage.includes(prop)) { // check for no matches
+                filteredPropList.push(+prop); // if the condition is true, then adding to the array as a number
             }
         });
-
-        return filteredPropList.reduce((acc, prop) => {
+        // here an object is formed and returned in which the necessary property and its value are added
+        return filteredPropList.reduce((acc, prop) => { 
+        
             if (proplistInTemp.hasOwnProperty(prop)) {
                 acc[prop] = proplistInTemp[prop];
             }
             return acc;
         }, {});
     }
-
-
     
     function addingPropListToTemplate() {
         const newPropListItem = document.createElement('li'),
@@ -421,15 +477,17 @@ const properties = function () {
             propList = document.querySelector('[name="properties-list"]'),
             propValueBlock = document.querySelector('.properties-value');
         let propValue = '';
+        let propValueOnlyCode = '';
 
         if (getValue(propValueBlock) === undefined) {
             propValue = '';
-            getValue(propValueBlock);
+            propValueOnlyCode = '';
         } else if (getValue(propValueBlock) === '---------') {
             propValue = '';
-            getValue(propValueBlock);
+            propValueOnlyCode = '';
         } else {
             propValue = getValue(propValueBlock);
+            propValueOnlyCode = getValue(propValueBlock, false);
         }
 
         if (propList.value !== '' && !(propList.value in proplistInTemp)) {
@@ -445,14 +503,38 @@ const properties = function () {
                 document.querySelector('.add-prop-to-template').classList.remove('warn');
             }
 
-            proplistInTemp[propList.value] = propValue;
-            savePropTempToLocalStorage();
+            proplistInTemp[propList.value] = propValueOnlyCode;
+            savePropTempToLocalStorage('propTemplate', proplistInTemp);
             console.log(proplistInTemp);
         } else {
             document.querySelector('.add-prop-to-template').classList.add('warn');
         }
     }
     
+    function addPropToPage(code) {
+        const addNewFormBtn = Array.from(
+            document.querySelectorAll('strong')).filter(el => el.textContent.includes('Добавить еще один Свойство')
+            )[0].parentElement;
+
+        const clickEvent = new Event('click');
+        addNewFormBtn.dispatchEvent(clickEvent);
+
+        let numOfallPropsOnPage = document.querySelectorAll(
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' +
+            '[id$="-attribute"]' +
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-attribute"])'
+        ).length - 1;
+
+        const prop = document.querySelector(
+            '#id_plumbing-attributevalue-content_type-object_id-' +
+            numOfallPropsOnPage +
+            '-attribute');
+
+        const changeEvent = new Event('change');
+        prop.value = code;
+        prop.dispatchEvent(changeEvent);
+    }
+
     if (addProp) {
         startListener(addProp, 'click', addingPropListToTemplate);
         
@@ -465,7 +547,7 @@ const properties = function () {
             
             target.parentNode.remove();
             delete proplistInTemp[valueCode];
-            savePropTempToLocalStorage();
+            savePropTempToLocalStorage('propTemplate', proplistInTemp);
             saveHtmlChanges();
         }
     });
@@ -474,13 +556,29 @@ const properties = function () {
         
         getFunctionResultFromPage(getPropListFromPage)
             .then(function(result){
-                console.log(getMissingPropsList(result));
+                missingPropsList = getMissingPropsList(result);
+                savePropTempToLocalStorage('missingPropList', missingPropsList);
+                console.log(missingPropsList);
             }).catch(function(error) {
                 console.log(error);
             });
+    });
+
+    addPropsFormOnPage.addEventListener('click', () => {
+        
+        const missingProps = Object.keys(getPropTempFromLocalStorage('missingPropList'));
+        
+        (async function () {
+            for (let i = 0; i <= missingProps.length; i++) {
+                await getFunctionResultFromPage(addPropToPage, missingProps[i]);
+            }
+        })();
     });
     
     
 };
 
 export default properties;
+
+
+
