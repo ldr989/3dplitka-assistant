@@ -16,9 +16,9 @@ function getFunctionResultFromPage(anyFunction, ...args) {
                             resolve(result[0].result);
                         }
                     );
-                }, 1000);
+                }, 100);
             } else {
-                reject("There are no active tabs");
+                reject(console.log('error'));
             }
         });
     });

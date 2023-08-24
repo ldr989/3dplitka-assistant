@@ -13,7 +13,9 @@ const properties = function () {
         template = document.querySelector('.template'),
         ol = template.querySelector('ol'),
         findPropOnPage = document.querySelector('.properties__find-prop'),
-        addPropsFormOnPage = document.querySelector('.properties__add-prop-form');
+        addPropsFormOnPage = document.querySelector('.properties__add-prop-form'),
+        addPropsValueOnPage = document.querySelector('.properties__add-prop-value'),
+        changeAllPropsOnPage = document.querySelector('.properties__change-prop-value');
     
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -43,7 +45,6 @@ const properties = function () {
                 }
             });
 
-
             document.querySelector('.properties__find-prop').addEventListener('click', () => {
 
                 getFunctionResultFromPage(getPropListFromPage)
@@ -61,11 +62,37 @@ const properties = function () {
 
                 
                 (async function () {
-                    for (let i = 0; i <= missingProps.length; i++) {
+                    for (let i = 0; i < missingProps.length; i++) {
                         await getFunctionResultFromPage(addPropToPage, missingProps[i]);
                     }
                 })();
             });
+
+            document.querySelector('.properties__add-prop-value').addEventListener('click', () => {
+                const missingProps = Object.keys(getPropTempFromLocalStorage('missingPropList'));
+                missingPropsList = getPropTempFromLocalStorage('missingPropList');
+                
+                (async function () {
+                    for (let i = 0; i < missingProps.length; i++) {
+                        const propCode = missingProps[i];
+                        const propValueCode = missingPropsList[missingProps[i]];
+                        await getFunctionResultFromPage(fillInPropValues, propCode, propValueCode);
+                    }
+                })();
+            });
+
+            // document.querySelector('.properties__change-prop-value').addEventListener('click', () => {
+            //     const propListFromTemp = Object.keys(getPropTempFromLocalStorage('propTemplate'));
+            //     proplistInTemp = getPropTempFromLocalStorage('propTemplate');
+
+            //     (async function () {
+            //         for (let i = 0; i < propListFromTemp.length; i++) {
+            //             const propCode = propListFromTemp[i];
+            //             const propValueCode = proplistInTemp[propListFromTemp[i]];
+            //             await getFunctionResultFromPage(fillInPropValues, propCode, propValueCode);
+            //         }
+            //     })();
+            // });
         }
     });
 
@@ -452,9 +479,7 @@ const properties = function () {
         const listOfPropsFromTemp = Object.keys(proplistInTemp), // list of props from Template
             allPropsOnPage = Object.keys(propList), // list of props from page
             filteredPropList = []; // a list of property names to be added will be stored here
-        function convertValue() {
 
-        }
         listOfPropsFromTemp.forEach(prop => { // getting the names of the properties to be added
             if (!allPropsOnPage.includes(prop)) { // check for no matches
                 filteredPropList.push(+prop); // if the condition is true, then adding to the array as a number
@@ -535,6 +560,56 @@ const properties = function () {
         prop.dispatchEvent(changeEvent);
     }
 
+    function fillInPropValues(propCode, propValue) {
+        const allPropsOnPage = document.querySelectorAll(
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' +
+            '[id$="-attribute"]' +
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-attribute"])'
+        );
+        const allPropsOnPageValues = document.querySelectorAll(
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' +
+            '[id$="-value"]' +
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-value"])'
+        );
+        
+        let numOfProp = 0;
+        allPropsOnPage.forEach((prop, i) => {
+            if (prop.value == propCode) {
+                numOfProp = i;
+            }
+        });
+
+        function setValue() {
+            const form = allPropsOnPageValues[numOfProp];
+
+            if (propValue !== '') {
+                if (form.tagName === 'UL') {
+                    if (form.querySelector('input[type="radio"]')) {
+                        const inputs = form.querySelectorAll('input[type="radio"]');
+                        if (propValue === true) {
+                            inputs[0].click();
+                        } else {
+                            inputs[1].click();
+                        }
+                    } else {
+                        if (Array.isArray(propValue)) {
+                            propValue.forEach(checkbox => {
+                                form.querySelector(`input[type="checkbox"][value="${checkbox}"]`).click();
+                            });
+                        } else {
+                            form.querySelector(`input[type="checkbox"][value="${propValue}"]`).click();
+                        }
+                    }
+                } else {
+                    const changeEvent = new Event('change');
+                    form.value = propValue;
+                    form.dispatchEvent(changeEvent);
+                }
+            }
+        }
+        setValue();
+    }
+
     if (addProp) {
         startListener(addProp, 'click', addingPropListToTemplate);
         
@@ -569,13 +644,38 @@ const properties = function () {
         const missingProps = Object.keys(getPropTempFromLocalStorage('missingPropList'));
         
         (async function () {
-            for (let i = 0; i <= missingProps.length; i++) {
+            for (let i = 0; i < missingProps.length; i++) {
                 await getFunctionResultFromPage(addPropToPage, missingProps[i]);
             }
         })();
     });
-    
-    
+
+    addPropsValueOnPage.addEventListener('click', () => {
+        const missingProps = Object.keys(getPropTempFromLocalStorage('missingPropList'));
+        missingPropsList = getPropTempFromLocalStorage('missingPropList');
+
+        (async function () {
+            for (let i = 0; i < missingProps.length; i++) {
+                const propCode = missingProps[i];
+                const propValueCode = missingPropsList[missingProps[i]];
+                await getFunctionResultFromPage(fillInPropValues, propCode, propValueCode);
+            }
+        })();
+    });
+
+    // changeAllPropsOnPage.addEventListener('click', () => {
+        
+    //     const propListFromTemp = Object.keys(getPropTempFromLocalStorage('propTemplate'));
+    //     proplistInTemp = getPropTempFromLocalStorage('propTemplate');
+
+    //     (async function () {
+    //         for (let i = 0; i < propListFromTemp.length; i++) {
+    //             const propCode = propListFromTemp[i];
+    //             const propValueCode = proplistInTemp[propListFromTemp[i]];
+    //             await getFunctionResultFromPage(fillInPropValues, propCode, propValueCode);
+    //         }
+    //     })();
+    // });
 };
 
 export default properties;
