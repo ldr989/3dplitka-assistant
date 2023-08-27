@@ -15,7 +15,11 @@ const properties = function () {
         findPropOnPage = document.querySelector('.properties__find-prop'),
         addPropsFormOnPage = document.querySelector('.properties__add-prop-form'),
         addPropsValueOnPage = document.querySelector('.properties__add-prop-value'),
-        changeAllPropsOnPage = document.querySelector('.properties__change-prop-value');
+        changeAllPropsOnPage = document.querySelector('.properties__change-prop-value'),
+        calcAreaBtn = document.querySelector('.calculate-tile-area'),
+        calcM2Btn = document.querySelector('.calculate-m2-in-a-box'),
+        calcTileWeightBtn = document.querySelector('.calculate-tile-weight'),
+        calcM2WeightBtn = document.querySelector('.calculate-м2-weight');
     
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -81,18 +85,34 @@ const properties = function () {
                 })();
             });
 
-            // document.querySelector('.properties__change-prop-value').addEventListener('click', () => {
-            //     const propListFromTemp = Object.keys(getPropTempFromLocalStorage('propTemplate'));
-            //     proplistInTemp = getPropTempFromLocalStorage('propTemplate');
+            document.querySelector('.properties__change-prop-value').addEventListener('click', () => {
+                proplistInTemp = getPropTempFromLocalStorage('propTemplate');
+                const propListFromTemp = Object.keys(proplistInTemp);
 
-            //     (async function () {
-            //         for (let i = 0; i < propListFromTemp.length; i++) {
-            //             const propCode = propListFromTemp[i];
-            //             const propValueCode = proplistInTemp[propListFromTemp[i]];
-            //             await getFunctionResultFromPage(fillInPropValues, propCode, propValueCode);
-            //         }
-            //     })();
-            // });
+                (async function () {
+                    for (let i = 0; i < propListFromTemp.length; i++) {
+                        const propCode = propListFromTemp[i];
+                        const propValueCode = proplistInTemp[propListFromTemp[i]];
+                        await getFunctionResultFromPage(fillInPropValues, propCode, propValueCode);
+                    }
+                })();
+            });
+
+            document.querySelector('.calculate-tile-area').addEventListener('click', () => {
+                useFunctionsOnPage(calculateTileArea);
+            });
+
+            document.querySelector('.calculate-m2-in-a-box').addEventListener('click', () => {
+                useFunctionsOnPage(calculateM2InBox);
+            });
+
+            document.querySelector('.calculate-tile-weight').addEventListener('click', () => {
+                useFunctionsOnPage(calculateWeightOfTile);
+            });
+
+            document.querySelector('.calculate-м2-weight').addEventListener('click', () => {
+                useFunctionsOnPage(calculateWeightOfTileM2);
+            });
         }
     });
 
@@ -560,54 +580,307 @@ const properties = function () {
         prop.dispatchEvent(changeEvent);
     }
 
-    function fillInPropValues(propCode, propValue) {
-        const allPropsOnPage = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' +
-            '[id$="-attribute"]' +
-            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-attribute"])'
+    function fillInPropValues(propCode, propValue) { 
+        const allPropsOnPage = document.querySelectorAll( // getting all properties on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property id 
+            '[id$="-attribute"]' + // trailing part of the property id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-attribute"])' // not a property
         );
-        const allPropsOnPageValues = document.querySelectorAll(
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' +
-            '[id$="-value"]' +
-            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-value"])'
+        const allPropsOnPageValues = document.querySelectorAll( // getting all property values on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property values id
+            '[id$="-value"]' + // trailing part of the property values id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-value"])' // not a property value
         );
         
-        let numOfProp = 0;
+        let numOfProp = 0; // number in order on a page
         allPropsOnPage.forEach((prop, i) => {
             if (prop.value == propCode) {
                 numOfProp = i;
             }
         });
 
-        function setValue() {
-            const form = allPropsOnPageValues[numOfProp];
+        const form = allPropsOnPageValues[numOfProp];
+        
+        function uncheckCheckboxes() {
+            const checkedCheckboxes = form.querySelectorAll('input[type="checkbox"]:checked');
+            if (checkedCheckboxes[0]) {
+                checkedCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+            }
+        }
 
-            if (propValue !== '') {
-                if (form.tagName === 'UL') {
-                    if (form.querySelector('input[type="radio"]')) {
-                        const inputs = form.querySelectorAll('input[type="radio"]');
-                        if (propValue === true) {
-                            inputs[0].click();
-                        } else {
-                            inputs[1].click();
-                        }
+        if (propValue !== '') {
+            if (form && form.querySelector('li')) {
+                if (form.querySelector('input[type="radio"]')) {
+                    const inputs = form.querySelectorAll('input[type="radio"]');
+                    if (propValue === true) {
+                        inputs[0].click();
                     } else {
-                        if (Array.isArray(propValue)) {
-                            propValue.forEach(checkbox => {
-                                form.querySelector(`input[type="checkbox"][value="${checkbox}"]`).click();
-                            });
-                        } else {
-                            form.querySelector(`input[type="checkbox"][value="${propValue}"]`).click();
-                        }
+                        inputs[1].click();
                     }
                 } else {
-                    const changeEvent = new Event('change');
+                    if (Array.isArray(propValue)) {
+                        uncheckCheckboxes();
+                        propValue.forEach(checkbox => {
+                            form.querySelector(`input[type="checkbox"][value="${checkbox}"]`).click();
+                        });
+                    } else {
+                        uncheckCheckboxes();
+                        form.querySelector(`input[type="checkbox"][value="${propValue}"]`).click();
+                    }
+                }
+            } else {
+                const changeEvent = new Event('change');
+                if (form) {
                     form.value = propValue;
                     form.dispatchEvent(changeEvent);
                 }
             }
         }
-        setValue();
+    }
+
+    function calculateTileArea() {
+        const length = document.querySelector('#id_length');
+        const width = document.querySelector('#id_width');
+
+        const allPropsOnPage = document.querySelectorAll( // getting all properties on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property id 
+            '[id$="-attribute"]' + // trailing part of the property id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-attribute"])' // not a property
+        );
+        const allPropsOnPageValues = document.querySelectorAll( // getting all property values on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property values id
+            '[id$="-value"]' + // trailing part of the property values id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-value"])' // not a property value
+        );
+
+        let numOfProp = 0; // number in order on a page
+        allPropsOnPage.forEach((prop, i) => {
+            if (prop.value == 4362) {
+                numOfProp = i;
+            }
+        });
+
+        const form = allPropsOnPageValues[numOfProp];
+
+        const changeEvent = new Event('change');
+        let unroundedNum = 0;
+        
+        if(form) {
+            unroundedNum = (length.value / 100) * (width.value / 100);
+            form.value = Math.ceil(unroundedNum * 100) / 100;
+            form.dispatchEvent(changeEvent);
+        }
+    }
+
+    function calculateM2InBox() {
+
+        const allPropsOnPage = document.querySelectorAll( // getting all properties on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property id 
+            '[id$="-attribute"]' + // trailing part of the property id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-attribute"])' // not a property
+        );
+        const allPropsOnPageValues = document.querySelectorAll( // getting all property values on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property values id
+            '[id$="-value"]' + // trailing part of the property values id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-value"])' // not a property value
+        );
+
+        let numOfm2 = 0; 
+        let numOfArea = 0;
+        let numOfAmount = 0;
+
+        allPropsOnPage.forEach((prop, i) => {
+            if (prop.value == 4289) {
+                numOfm2 = i;
+            }
+            if (prop.value == 4362) {
+                numOfArea = i;
+            }
+            if (prop.value == 4288) {
+                numOfAmount = i;
+            }
+        });
+
+        const formM2 = allPropsOnPageValues[numOfm2];
+        const formOfArea = allPropsOnPageValues[numOfArea];
+        const formOfAmount = allPropsOnPageValues[numOfAmount];
+        const changeEvent = new Event('change');
+        let unroundedNum = 0;
+
+        if (formM2) {
+            unroundedNum = Number(formOfArea.value.replace(",", ".")) * formOfAmount.value;
+            formM2.value = Math.ceil(unroundedNum * 100) / 100;
+            formM2.dispatchEvent(changeEvent);
+        }
+    }
+
+    function calculateWeightOfTile() {
+
+        const allPropsOnPage = document.querySelectorAll( // getting all properties on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property id 
+            '[id$="-attribute"]' + // trailing part of the property id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-attribute"])' // not a property
+        );
+        const allPropsOnPageValues = document.querySelectorAll( // getting all property values on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property values id
+            '[id$="-value"]' + // trailing part of the property values id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-value"])' // not a property value
+        );
+
+        let numOfTileWeight = 0;
+        let numOfBoxWeight = 0;
+        let numOfAmountInBox = 0;
+
+        allPropsOnPage.forEach((prop, i) => {
+            if (prop.value == 4354) {
+                numOfTileWeight = i;
+            }
+            if (prop.value == 4357) {
+                numOfBoxWeight = i;
+            }
+            if (prop.value == 4288) {
+                numOfAmountInBox = i;
+            }
+        });
+
+        const formTileWeight = allPropsOnPageValues[numOfTileWeight];
+        const formOfBoxWeight = allPropsOnPageValues[numOfBoxWeight];
+        const formOfAmountInBox = allPropsOnPageValues[numOfAmountInBox];
+
+        const changeEvent = new Event('change');
+        let unroundedNum = 0;
+
+        if (formTileWeight) {
+
+            const boxWeight = Number(formOfBoxWeight.value.replace(",", "."));
+            const amountInBox = Number(formOfAmountInBox.value.replace(",", "."));
+
+            unroundedNum = boxWeight / amountInBox;
+            formTileWeight.value = Math.ceil(unroundedNum * 100) / 100;
+            formTileWeight.dispatchEvent(changeEvent);
+        }
+    }
+
+    function calculateWeightOfTileM2() {
+
+        const allPropsOnPage = document.querySelectorAll( // getting all properties on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property id 
+            '[id$="-attribute"]' + // trailing part of the property id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-attribute"])' // not a property
+        );
+        const allPropsOnPageValues = document.querySelectorAll( // getting all property values on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property values id
+            '[id$="-value"]' + // trailing part of the property values id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-value"])' // not a property value
+        );
+
+        let numOfM2Weight = 0;
+        let numOfBoxWeight = 0;
+        let numOfM2InBox = 0;
+
+        allPropsOnPage.forEach((prop, i) => {
+            if (prop.value == 4355) {
+                numOfM2Weight = i;
+            }
+            if (prop.value == 4357) {
+                numOfBoxWeight = i;
+            }
+            if (prop.value == 4289) {
+                numOfM2InBox = i;
+            }
+        });
+
+        const formM2Weight = allPropsOnPageValues[numOfM2Weight];
+        const formOfBoxWeight = allPropsOnPageValues[numOfBoxWeight];
+        const formOfM2InBox = allPropsOnPageValues[numOfM2InBox];
+
+        const changeEvent = new Event('change');
+        let unroundedNum = 0;
+
+        if (formM2Weight) {
+
+            const boxWeight = Number(formOfBoxWeight.value.replace(",", "."));
+            const m2InBox = Number(formOfM2InBox.value.replace(",", "."));
+
+            unroundedNum = boxWeight / m2InBox;
+            formM2Weight.value = Math.ceil(unroundedNum * 100) / 100;
+            formM2Weight.dispatchEvent(changeEvent);
+        }
+    }
+
+    function calculatePallet() {
+
+        const allPropsOnPage = document.querySelectorAll( // getting all properties on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property id 
+            '[id$="-attribute"]' + // trailing part of the property id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-attribute"])' // not a property
+        );
+        const allPropsOnPageValues = document.querySelectorAll( // getting all property values on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property values id
+            '[id$="-value"]' + // trailing part of the property values id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-value"])' // not a property value
+        );
+
+        let numOfm2InBox = 0;
+        let numOfWeightOfBox = 0;
+        let numOfAmountOfBoxes = 0;
+        let numOfM2InPallet = 0;
+        let numOfWeightOfPallet = 0;
+
+        allPropsOnPage.forEach((prop, i) => {
+            if (prop.value == 4289) {
+                numOfm2InBox = i;
+            }
+            if (prop.value == 4357) {
+                numOfWeightOfBox = i;
+            }
+            if (prop.value == 4947) {
+                numOfAmountOfBoxes = i;
+            }
+            if (prop.value == 4356) {
+                numOfM2InPallet = i;
+            }
+            if (prop.value == 5277) {
+                numOfWeightOfPallet = i;
+            }
+        });
+
+        const formM2inBox = allPropsOnPageValues[numOfm2InBox];
+        const formOfWeightOfBox = allPropsOnPageValues[numOfWeightOfBox];
+        const formOfAmountOfBoxes = allPropsOnPageValues[numOfAmountOfBoxes];
+        const formOfM2InPallet = allPropsOnPageValues[numOfM2InPallet];
+        const formOfWeightOfPallet = allPropsOnPageValues[numOfWeightOfPallet];
+
+        if (formM2inBox && formOfWeightOfBox && formOfAmountOfBoxes && formOfM2InPallet && formOfWeightOfPallet) {
+            
+            const m2inBox = Number(formM2inBox.value.replace(",", ".")); 
+            const weightOfBox = Number(formOfWeightOfBox.value.replace(",", ".")); 
+            const amountOfBoxes = Number(formOfAmountOfBoxes.value.replace(",", ".")); 
+            const m2InPallet = Number(formOfM2InPallet.value.replace(",", ".")); 
+            const wightOfPallet = Number(formOfWeightOfPallet.value.replace(",", "."));
+            const changeEvent = new Event('change');
+
+            if (m2inBox && amountOfBoxes && m2inBox !== '' && amountOfBoxes !== '') {
+                // setting the value of m2 in the pallet
+                formOfM2InPallet.value = Math.ceil((m2inBox * amountOfBoxes) * 100) / 100;
+                formOfM2InPallet.dispatchEvent(changeEvent);
+            }
+            if (weightOfBox && amountOfBoxes && weightOfBox !== '' && amountOfBoxes !== '') {
+                // setting the value of weight in the pallet
+                formOfWeightOfPallet.value = Math.ceil((weightOfBox * amountOfBoxes) * 100) / 100;
+                formOfWeightOfPallet.dispatchEvent(changeEvent);
+            } 
+            if (m2InPallet && m2inBox && m2InPallet !== '' && m2inBox !== '') {
+                // setting the value of amount of boxes in the pallet
+                formOfAmountOfBoxes.value = Math.ceil((m2InPallet / m2inBox) * 100) / 100;
+                formOfAmountOfBoxes.dispatchEvent(changeEvent);
+            } else if (wightOfPallet && weightOfBox && wightOfPallet !== '' && weightOfBox !== '') {
+                formOfAmountOfBoxes.value = Math.ceil((wightOfPallet / weightOfBox) * 100) / 100;
+                formOfAmountOfBoxes.dispatchEvent(changeEvent);
+            }
+        }
     }
 
     if (addProp) {
@@ -663,19 +936,34 @@ const properties = function () {
         })();
     });
 
-    // changeAllPropsOnPage.addEventListener('click', () => {
-        
-    //     const propListFromTemp = Object.keys(getPropTempFromLocalStorage('propTemplate'));
-    //     proplistInTemp = getPropTempFromLocalStorage('propTemplate');
+    changeAllPropsOnPage.addEventListener('click', () => {
+        proplistInTemp = getPropTempFromLocalStorage('propTemplate');
+        const propListFromTemp = Object.keys(proplistInTemp);
 
-    //     (async function () {
-    //         for (let i = 0; i < propListFromTemp.length; i++) {
-    //             const propCode = propListFromTemp[i];
-    //             const propValueCode = proplistInTemp[propListFromTemp[i]];
-    //             await getFunctionResultFromPage(fillInPropValues, propCode, propValueCode);
-    //         }
-    //     })();
-    // });
+        (async function () {
+            for (let i = 0; i < propListFromTemp.length; i++) {
+                const propCode = propListFromTemp[i];
+                const propValueCode = proplistInTemp[propListFromTemp[i]];
+                await getFunctionResultFromPage(fillInPropValues, propCode, propValueCode);
+            }
+        })();
+    });
+
+    calcAreaBtn.addEventListener('click', () => {
+        useFunctionsOnPage(calculateTileArea);
+    });
+    
+    calcM2Btn.addEventListener('click', () => {
+        useFunctionsOnPage(calculateM2InBox);
+    });
+
+    calcTileWeightBtn.addEventListener('click', () => {
+        useFunctionsOnPage(calculateWeightOfTile);
+    });
+
+    calcM2WeightBtn.addEventListener('click', () => {
+        useFunctionsOnPage(calculateWeightOfTileM2);
+    });
 };
 
 export default properties;
