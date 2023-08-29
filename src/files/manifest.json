@@ -9,5 +9,6 @@
         "default_popup": "popup.html"
     },
     "permissions": ["scripting", "activeTab"],
-    "background": {}
+    "background": {
+    }
 }

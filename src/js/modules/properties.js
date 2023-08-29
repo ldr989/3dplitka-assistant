@@ -37,6 +37,14 @@ const properties = function () {
 
             startListener(document.querySelector('.add-prop-to-template'), 'click', addingPropListToTemplate);
             
+            
+            document.querySelector('.properties').addEventListener('click', (e) => {
+                if (e.target.classList.contains('properties-value')) {
+                    console.log('интпут в фокусе');
+                    document.addEventListener('keydown', handleEnterKey);
+                }
+            });
+
             document.querySelector('.template ol').addEventListener('click', (e) => {
                 const target = e.target;
                 if (target && target.classList.contains('delFromTemplate')) {
@@ -136,6 +144,16 @@ const properties = function () {
         document.querySelector('.template ol').lastElementChild.insertBefore(input, document.querySelector('.add-prop-to-template'));
     }
 
+    function handleEnterKey(event) {
+        if (event.key === 'Enter') { // проверяем, была ли нажата клавиша Enter
+            event.preventDefault();
+            addingPropListToTemplate();
+            savePropTempToLocalStorage('propTemplate', proplistInTemp);
+            saveHtmlChanges();
+            document.removeEventListener('keydown', handleEnterKey);
+        }
+    }
+
     function createBoolean() {
         const boolean = document.createElement('ul');
         boolean.innerHTML = `
@@ -220,7 +238,11 @@ const properties = function () {
     function getValue(elem, codeWithText = true) {
         if (codeWithText) {
             if (elem.nodeName === 'SELECT') {
-                return `${elem.value} ${elem.selectedOptions[0].text}`;
+                if (elem.value === '') {
+                    return '';
+                } else {
+                    return `${elem.value} ${elem.selectedOptions[0].text}`;
+                }
             } else if (elem.nodeName === 'UL') {
                 const checkedInputs = elem.querySelectorAll('input:checked');
 
@@ -234,7 +256,7 @@ const properties = function () {
                     return listOfValues.join(', ');
                 }
             } else {
-                return elem.value;
+                return Number(elem.value.replace(",", "."));
             }
         } else {
             if (elem.nodeName === 'SELECT') {
@@ -264,7 +286,7 @@ const properties = function () {
                     return '';
                 }
             } else {
-                return elem.value;
+                return Number(elem.value.replace(",", "."));
             }
         }
     }
@@ -523,14 +545,12 @@ const properties = function () {
             propValueBlock = document.querySelector('.properties-value');
         let propValue = '';
         let propValueOnlyCode = '';
+        const receivedValue = getValue(propValueBlock);
 
-        if (getValue(propValueBlock) === undefined) {
+        if (!receivedValue || receivedValue < 0) {
             propValue = '';
             propValueOnlyCode = '';
-        } else if (getValue(propValueBlock) === '---------') {
-            propValue = '';
-            propValueOnlyCode = '';
-        } else {
+        }  else {
             propValue = getValue(propValueBlock);
             propValueOnlyCode = getValue(propValueBlock, false);
         }
@@ -632,7 +652,7 @@ const properties = function () {
                 }
             } else {
                 const changeEvent = new Event('change');
-                if (form) {
+                if (form && Number(form.value.replace(",", ".")) !== +propValue) {
                     form.value = propValue;
                     form.dispatchEvent(changeEvent);
                 }
@@ -884,9 +904,11 @@ const properties = function () {
     }
 
     if (addProp) {
-        startListener(addProp, 'click', addingPropListToTemplate);
-        
+        startListener(addProp, 'click', addingPropListToTemplate);    
     }
+
+
+
     ol.addEventListener('click', (e) => {
         const target = e.target;
         
