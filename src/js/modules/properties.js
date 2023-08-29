@@ -12,6 +12,7 @@ const properties = function () {
         addProp = document.querySelector('.add-prop-to-template'),
         template = document.querySelector('.template'),
         ol = template.querySelector('ol'),
+        prop = document.querySelector('.properties'),
         findPropOnPage = document.querySelector('.properties__find-prop'),
         addPropsFormOnPage = document.querySelector('.properties__add-prop-form'),
         addPropsValueOnPage = document.querySelector('.properties__add-prop-value'),
@@ -19,8 +20,13 @@ const properties = function () {
         calcAreaBtn = document.querySelector('.calculate-tile-area'),
         calcM2Btn = document.querySelector('.calculate-m2-in-a-box'),
         calcTileWeightBtn = document.querySelector('.calculate-tile-weight'),
-        calcM2WeightBtn = document.querySelector('.calculate-м2-weight');
-    
+        calcTilesInBox = document.querySelector('.calculate-amount-in-a-box'),
+        calcM2WeightBtn = document.querySelector('.calculate-м2-weight'),
+        calcWeightInBox = document.querySelector('.calculate-weight-in-a-box'),
+        calcBoxesInPalletBtn = document.querySelector('.calculate-boxes-in-pallet'),
+        calcM2InPalletBtn = document.querySelector('.calculate-m2-in-pallet'),
+        calcWeightInPalletBtn = document.querySelector('.calculate-weight-in-pallet');
+        
 
     document.addEventListener("DOMContentLoaded", function () {
     // when opening the extension page, loads a copy of the body tag from localStorage if there is a copy
@@ -40,7 +46,6 @@ const properties = function () {
             
             document.querySelector('.properties').addEventListener('click', (e) => {
                 if (e.target.classList.contains('properties-value')) {
-                    console.log('интпут в фокусе');
                     document.addEventListener('keydown', handleEnterKey);
                 }
             });
@@ -120,6 +125,26 @@ const properties = function () {
 
             document.querySelector('.calculate-м2-weight').addEventListener('click', () => {
                 useFunctionsOnPage(calculateWeightOfTileM2);
+            });
+
+            document.querySelector('.calculate-weight-in-a-box').addEventListener('click', () => {
+                useFunctionsOnPage(calculateWeightOfBox);
+            });
+
+            document.querySelector('.calculate-boxes-in-pallet').addEventListener('click', () => {
+                useFunctionsOnPage(calculateBoxesInPallet);
+            });
+
+            document.querySelector('.calculate-m2-in-pallet').addEventListener('click', () => {
+                useFunctionsOnPage(calculateM2InPallet);
+            });
+
+            document.querySelector('.calculate-weight-in-pallet').addEventListener('click', () => {
+                useFunctionsOnPage(calculateWeightOfPallet);
+            });
+
+            document.querySelector('.calculate-amount-in-a-box').addEventListener('click', () => {
+                useFunctionsOnPage(calculateTilesInBox);
             });
         }
     });
@@ -710,6 +735,8 @@ const properties = function () {
         let numOfm2 = 0; 
         let numOfArea = 0;
         let numOfAmount = 0;
+        let numOfM2InPallet = 0;
+        let numOfAmountOfBoxes = 0;
 
         allPropsOnPage.forEach((prop, i) => {
             if (prop.value == 4289) {
@@ -721,18 +748,159 @@ const properties = function () {
             if (prop.value == 4288) {
                 numOfAmount = i;
             }
+            if (prop.value == 4356) {
+                numOfM2InPallet = i;
+            }
+            if (prop.value == 4947) {
+                numOfAmountOfBoxes = i;
+            }
         });
 
         const formM2 = allPropsOnPageValues[numOfm2];
         const formOfArea = allPropsOnPageValues[numOfArea];
-        const formOfAmount = allPropsOnPageValues[numOfAmount];
-        const changeEvent = new Event('change');
-        let unroundedNum = 0;
+        const formOfTileInBoxes = allPropsOnPageValues[numOfAmount];
+        const formOfM2InPallet = allPropsOnPageValues[numOfM2InPallet];
+        const formBoxesInPallet = allPropsOnPageValues[numOfAmountOfBoxes];
 
         if (formM2) {
-            unroundedNum = Number(formOfArea.value.replace(",", ".")) * formOfAmount.value;
-            formM2.value = Math.ceil(unroundedNum * 100) / 100;
-            formM2.dispatchEvent(changeEvent);
+            const tileArea = Number(formOfArea.value.replace(",", "."));
+            const amountInBox = Number(formOfTileInBoxes.value.replace(",", "."));
+            const m2InPallet = Number(formOfM2InPallet.value.replace(",", "."));
+            const boxesInpallet = Number(formBoxesInPallet.value.replace(",", "."));
+            const changeEvent = new Event('change');
+
+            if (tileArea && amountInBox && tileArea !== '' && amountInBox !== '') {
+                // setting the value of m2 in a box
+                formM2.value = Math.ceil((amountInBox * tileArea) * 100) / 100;
+                formM2.dispatchEvent(changeEvent);
+            } else if (m2InPallet && boxesInpallet && m2InPallet !== '' && boxesInpallet !== '') {
+                formM2.value = Math.ceil((m2InPallet / boxesInpallet) * 100) / 100;
+                formM2.dispatchEvent(changeEvent);
+            }
+        }
+    }
+
+    function calculateTilesInBox() {
+
+        const allPropsOnPage = document.querySelectorAll( // getting all properties on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property id 
+            '[id$="-attribute"]' + // trailing part of the property id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-attribute"])' // not a property
+        );
+        const allPropsOnPageValues = document.querySelectorAll( // getting all property values on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property values id
+            '[id$="-value"]' + // trailing part of the property values id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-value"])' // not a property value
+        );
+
+        let numOfAmount = 0;
+        let numOfBoxWeight = 0;
+        let numOfTileWeight = 0;
+
+        allPropsOnPage.forEach((prop, i) => {
+            if (prop.value == 4288) {
+                numOfAmount = i;
+            }
+            if (prop.value == 4357) {
+                numOfBoxWeight = i;
+            }
+            if (prop.value == 4354) {
+                numOfTileWeight = i;
+            }
+        });
+
+        const formOfTileInBoxes = allPropsOnPageValues[numOfAmount];
+        const formOfBoxWeight = allPropsOnPageValues[numOfBoxWeight];
+        const formTileWeight = allPropsOnPageValues[numOfTileWeight];
+
+        if (formOfTileInBoxes) {
+            const boxWeight = Number(formOfBoxWeight.value.replace(",", "."));
+            const tileWeight = Number(formTileWeight.value.replace(",", "."));
+
+            const changeEvent = new Event('change');
+
+            if (boxWeight && tileWeight && boxWeight !== '' && tileWeight !== '') {
+                // setting the value of amount of tiles in a box
+                formOfTileInBoxes.value = Math.ceil((boxWeight / tileWeight) * 100) / 100;
+                formOfTileInBoxes.dispatchEvent(changeEvent);
+            }
+        }
+    }
+
+    function calculateWeightOfBox() {
+
+        const allPropsOnPage = document.querySelectorAll( // getting all properties on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property id 
+            '[id$="-attribute"]' + // trailing part of the property id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-attribute"])' // not a property
+        );
+        const allPropsOnPageValues = document.querySelectorAll( // getting all property values on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property values id
+            '[id$="-value"]' + // trailing part of the property values id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-value"])' // not a property value
+        );
+
+        let numOfBoxWeight = 0;
+        let numOfAmountInBox = 0;
+        let numOfTileWeight = 0;
+        let numOfWeightM2 = 0;
+        let numOfM2InBox = 0;
+        let numOfWeightOfPallet = 0;
+        let numOfBoxesInPallet = 0;
+
+        allPropsOnPage.forEach((prop, i) => {
+
+            if (prop.value == 4357) {
+                numOfBoxWeight = i;
+            }
+            if (prop.value == 4288) {
+                numOfAmountInBox = i;
+            }
+            if (prop.value == 4354) {
+                numOfTileWeight = i;
+            }
+            if (prop.value == 4355) {
+                numOfWeightM2 = i;
+            }
+            if (prop.value == 4289) {
+                numOfM2InBox = i;
+            }
+            if (prop.value == 5277) {
+                numOfWeightOfPallet = i;
+            }
+            if (prop.value == 4947) {
+                numOfBoxesInPallet = i;
+            }
+        });
+        
+        const formOfBoxWeight = allPropsOnPageValues[numOfBoxWeight];
+        const formTileWeight = allPropsOnPageValues[numOfTileWeight];
+        const formOfAmountInBox = allPropsOnPageValues[numOfAmountInBox];
+        const formOfM2Weight = allPropsOnPageValues[numOfWeightM2];
+        const formOfM2InBox = allPropsOnPageValues[numOfM2InBox];
+        const formOfWeightOfPallet = allPropsOnPageValues[numOfWeightOfPallet];
+        const formOfBoxesInPallet = allPropsOnPageValues[numOfBoxesInPallet];
+
+        const changeEvent = new Event('change');
+
+        if (formOfBoxWeight) {
+            const amountInBox = Number(formOfAmountInBox.value.replace(",", "."));
+            const m2Weight = Number(formOfM2Weight.value.replace(",", "."));
+            const tileWeight = Number(formTileWeight.value.replace(",", "."));
+            const m2InBox = Number(formOfM2InBox.value.replace(",", "."));
+            const WeightOfPallet = Number(formOfWeightOfPallet.value.replace(",", "."));
+            const boxesInPallet = Number(formOfBoxesInPallet.value.replace(",", "."));
+
+            if (m2Weight && m2InBox && m2Weight !== '' && m2InBox !== '') {
+                formOfBoxWeight.value = Math.ceil((m2Weight * m2InBox) * 100) / 100;
+                formOfBoxWeight.dispatchEvent(changeEvent);
+            } else if (tileWeight && amountInBox && tileWeight !== '' && amountInBox !== '') {
+                formOfBoxWeight.value = Math.ceil((tileWeight * amountInBox) * 100) / 100;
+                formOfBoxWeight.dispatchEvent(changeEvent);
+            } else if (WeightOfPallet && boxesInPallet && WeightOfPallet !== '' && boxesInPallet !== '') {
+                formOfBoxWeight.value = Math.ceil((WeightOfPallet / boxesInPallet) * 100) / 100;
+                formOfBoxWeight.dispatchEvent(changeEvent);
+            }
         }
     }
 
@@ -752,6 +920,8 @@ const properties = function () {
         let numOfTileWeight = 0;
         let numOfBoxWeight = 0;
         let numOfAmountInBox = 0;
+        let numOfWeightM2 = 0;
+        let numOfM2InBox = 0;
 
         allPropsOnPage.forEach((prop, i) => {
             if (prop.value == 4354) {
@@ -763,23 +933,34 @@ const properties = function () {
             if (prop.value == 4288) {
                 numOfAmountInBox = i;
             }
+            if (prop.value == 4355) {
+                numOfWeightM2 = i;
+            }
+            if (prop.value == 4289) {
+                numOfM2InBox = i;
+            }
         });
 
         const formTileWeight = allPropsOnPageValues[numOfTileWeight];
         const formOfBoxWeight = allPropsOnPageValues[numOfBoxWeight];
         const formOfAmountInBox = allPropsOnPageValues[numOfAmountInBox];
+        // const formOfM2Weight = allPropsOnPageValues[numOfWeightM2];
+        // const formOfM2InBox = allPropsOnPageValues[numOfM2InBox];
 
         const changeEvent = new Event('change');
-        let unroundedNum = 0;
 
         if (formTileWeight) {
 
             const boxWeight = Number(formOfBoxWeight.value.replace(",", "."));
             const amountInBox = Number(formOfAmountInBox.value.replace(",", "."));
+            // const m2Weight = Number(formOfM2Weight.value.replace(",", "."));
+            // const m2InBox = Number(formOfM2InBox.value.replace(",", "."));
 
-            unroundedNum = boxWeight / amountInBox;
-            formTileWeight.value = Math.ceil(unroundedNum * 100) / 100;
-            formTileWeight.dispatchEvent(changeEvent);
+
+            if (boxWeight && amountInBox && boxWeight !== '' && amountInBox !== '') {
+                formTileWeight.value = Math.ceil((boxWeight / amountInBox) * 100) / 100;
+                formTileWeight.dispatchEvent(changeEvent);
+            }
         }
     }
 
@@ -817,20 +998,64 @@ const properties = function () {
         const formOfM2InBox = allPropsOnPageValues[numOfM2InBox];
 
         const changeEvent = new Event('change');
-        let unroundedNum = 0;
 
         if (formM2Weight) {
 
             const boxWeight = Number(formOfBoxWeight.value.replace(",", "."));
             const m2InBox = Number(formOfM2InBox.value.replace(",", "."));
 
-            unroundedNum = boxWeight / m2InBox;
-            formM2Weight.value = Math.ceil(unroundedNum * 100) / 100;
+            formM2Weight.value = Math.ceil((boxWeight / m2InBox) * 100) / 100;
             formM2Weight.dispatchEvent(changeEvent);
         }
     }
+    
+    function calculateM2InPallet() {
+        const allPropsOnPage = document.querySelectorAll( // getting all properties on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property id 
+            '[id$="-attribute"]' + // trailing part of the property id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-attribute"])' // not a property
+        );
+        const allPropsOnPageValues = document.querySelectorAll( // getting all property values on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property values id
+            '[id$="-value"]' + // trailing part of the property values id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-value"])' // not a property value
+        );
 
-    function calculatePallet() {
+        let numOfM2InPallet = 0;
+        let numOfm2InBox = 0;
+        let numOfAmountOfBoxes = 0;
+
+        allPropsOnPage.forEach((prop, i) => {
+            if (prop.value == 4356) {
+                numOfM2InPallet = i;
+            }
+            if (prop.value == 4289) {
+                numOfm2InBox = i;
+            }
+            if (prop.value == 4947) {
+                numOfAmountOfBoxes = i;
+            }
+        });
+
+            const formM2inBox = allPropsOnPageValues[numOfm2InBox];
+            const formOfBoxesInPallet = allPropsOnPageValues[numOfAmountOfBoxes];
+            const formOfM2InPallet = allPropsOnPageValues[numOfM2InPallet];
+
+            if (formOfM2InPallet) {
+
+                const m2inBox1 = Number(formM2inBox.value.replace(",", "."));
+                const amountOfBoxes1 = Number(formOfBoxesInPallet.value.replace(",", "."));
+                const changeEvent1 = new Event('change');
+
+                if (m2inBox1 && amountOfBoxes1 && m2inBox1 !== '' && amountOfBoxes1 !== '') {
+                    // setting the value of m2 in the pallet
+                    formOfM2InPallet.value = Math.ceil((m2inBox1 * amountOfBoxes1) * 100) / 100;
+                    formOfM2InPallet.dispatchEvent(changeEvent1);
+                }
+            }
+    }
+
+    function calculateBoxesInPallet() {
 
         const allPropsOnPage = document.querySelectorAll( // getting all properties on the page
             '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property id 
@@ -874,24 +1099,14 @@ const properties = function () {
         const formOfWeightOfPallet = allPropsOnPageValues[numOfWeightOfPallet];
 
         if (formM2inBox && formOfWeightOfBox && formOfAmountOfBoxes && formOfM2InPallet && formOfWeightOfPallet) {
-            
-            const m2inBox = Number(formM2inBox.value.replace(",", ".")); 
-            const weightOfBox = Number(formOfWeightOfBox.value.replace(",", ".")); 
-            const amountOfBoxes = Number(formOfAmountOfBoxes.value.replace(",", ".")); 
-            const m2InPallet = Number(formOfM2InPallet.value.replace(",", ".")); 
+
+            const m2inBox = Number(formM2inBox.value.replace(",", "."));
+            const weightOfBox = Number(formOfWeightOfBox.value.replace(",", "."));
+            const m2InPallet = Number(formOfM2InPallet.value.replace(",", "."));
             const wightOfPallet = Number(formOfWeightOfPallet.value.replace(",", "."));
             const changeEvent = new Event('change');
 
-            if (m2inBox && amountOfBoxes && m2inBox !== '' && amountOfBoxes !== '') {
-                // setting the value of m2 in the pallet
-                formOfM2InPallet.value = Math.ceil((m2inBox * amountOfBoxes) * 100) / 100;
-                formOfM2InPallet.dispatchEvent(changeEvent);
-            }
-            if (weightOfBox && amountOfBoxes && weightOfBox !== '' && amountOfBoxes !== '') {
-                // setting the value of weight in the pallet
-                formOfWeightOfPallet.value = Math.ceil((weightOfBox * amountOfBoxes) * 100) / 100;
-                formOfWeightOfPallet.dispatchEvent(changeEvent);
-            } 
+
             if (m2InPallet && m2inBox && m2InPallet !== '' && m2inBox !== '') {
                 // setting the value of amount of boxes in the pallet
                 formOfAmountOfBoxes.value = Math.ceil((m2InPallet / m2inBox) * 100) / 100;
@@ -903,11 +1118,63 @@ const properties = function () {
         }
     }
 
+    function calculateWeightOfPallet() {
+
+        const allPropsOnPage = document.querySelectorAll( // getting all properties on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property id 
+            '[id$="-attribute"]' + // trailing part of the property id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-attribute"])' // not a property
+        );
+        const allPropsOnPageValues = document.querySelectorAll( // getting all property values on the page
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property values id
+            '[id$="-value"]' + // trailing part of the property values id 
+            ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-value"])' // not a property value
+        );
+
+        let numOfWeightOfBox = 0;
+        let numOfAmountOfBoxes = 0;
+        let numOfWeightOfPallet = 0;
+
+        allPropsOnPage.forEach((prop, i) => {
+            if (prop.value == 4357) {
+                numOfWeightOfBox = i;
+            }
+            if (prop.value == 4947) {
+                numOfAmountOfBoxes = i;
+            }
+            if (prop.value == 5277) {
+                numOfWeightOfPallet = i;
+            }
+        });
+
+        const formOfWeightOfBox = allPropsOnPageValues[numOfWeightOfBox];
+        const formOfAmountOfBoxes = allPropsOnPageValues[numOfAmountOfBoxes];
+        const formOfWeightOfPallet = allPropsOnPageValues[numOfWeightOfPallet];
+
+        if (formOfWeightOfBox && formOfAmountOfBoxes && formOfWeightOfPallet) {
+
+            const weightOfBox = Number(formOfWeightOfBox.value.replace(",", "."));
+            const amountOfBoxes = Number(formOfAmountOfBoxes.value.replace(",", "."));
+            const changeEvent = new Event('change');
+
+            if (weightOfBox && amountOfBoxes && weightOfBox !== '' && amountOfBoxes !== '') {
+                // setting the value of weight in the pallet
+                formOfWeightOfPallet.value = Math.ceil((weightOfBox * amountOfBoxes) * 100) / 100;
+                formOfWeightOfPallet.dispatchEvent(changeEvent);
+            }
+        }
+    }
+
+
     if (addProp) {
         startListener(addProp, 'click', addingPropListToTemplate);    
     }
 
-
+    prop.addEventListener('click', (e) => {
+        if (e.target.classList.contains('properties-value')) {
+            document.addEventListener('keydown', handleEnterKey);
+        }
+    });
 
     ol.addEventListener('click', (e) => {
         const target = e.target;
@@ -985,6 +1252,26 @@ const properties = function () {
 
     calcM2WeightBtn.addEventListener('click', () => {
         useFunctionsOnPage(calculateWeightOfTileM2);
+    });
+
+    calcBoxesInPalletBtn.addEventListener('click', () => {
+        useFunctionsOnPage(calculateBoxesInPallet);
+    });
+
+    calcM2InPalletBtn.addEventListener('click', () => {
+        useFunctionsOnPage(calculateM2InPallet);
+    });
+
+    calcWeightInPalletBtn.addEventListener('click', () => {
+        useFunctionsOnPage(calculateWeightOfPallet);
+    });
+
+    calcWeightInBox.addEventListener('click', () => {
+        useFunctionsOnPage(calculateWeightOfBox);
+    });
+
+    calcTilesInBox.addEventListener('click', () => {
+        useFunctionsOnPage(calculateTilesInBox);
     });
 };
 
