@@ -357,41 +357,46 @@ const properties = function () {
     function getValue(elem, codeWithText = true) {
         if (codeWithText) {
             if (elem.nodeName === "SELECT") {
-                if (elem.value === "") {
-                    return "";
-                } else {
-                    return `${elem.value} ${elem.selectedOptions[0].text}`;
-                }
-            } else if (elem.nodeName === "UL") {
-                const checkedInputs = elem.querySelectorAll("input:checked");
+                return elem.value === ""
+                    ? ""
+                    : `${elem.value} ${elem.selectedOptions[0].text}`;
+            } else if (
+                elem.querySelectorAll(
+                    'input[type="checkbox"], input[type="radio"]'
+                ).length > 0
+            ) {
+                const checkedInputs = elem.querySelectorAll(
+                    'input[type="checkbox"]:checked, input[type="radio"]:checked'
+                );
 
                 if (checkedInputs.length === 1) {
                     return `${
                         checkedInputs[0].value
                     } ${checkedInputs[0].parentNode.textContent.trim()}`;
                 } else {
-                    let listOfValues = [];
-                    checkedInputs.forEach((item) => {
-                        listOfValues.push(
-                            `${
-                                item.value
-                            } ${item.parentNode.textContent.trim()}`
-                        );
-                    });
-                    return listOfValues.join(", ");
+                    return Array.from(checkedInputs)
+                        .map(
+                            (item) =>
+                                `${
+                                    item.value
+                                } ${item.parentNode.textContent.trim()}`
+                        )
+                        .join(", ");
                 }
             } else {
                 return Number(elem.value.replace(",", "."));
             }
         } else {
             if (elem.nodeName === "SELECT") {
-                if (elem.value === "") {
-                    return "";
-                } else {
-                    return +elem.value;
-                }
-            } else if (elem.nodeName === "UL") {
-                const checkedInputs = elem.querySelectorAll("input:checked");
+                return elem.value === "" ? "" : +elem.value;
+            } else if (
+                elem.querySelectorAll(
+                    'input[type="checkbox"], input[type="radio"]'
+                ).length > 0
+            ) {
+                const checkedInputs = elem.querySelectorAll(
+                    'input[type="checkbox"]:checked, input[type="radio"]:checked'
+                );
 
                 if (checkedInputs.length === 1) {
                     if (checkedInputs[0].value === "True") {
@@ -402,11 +407,7 @@ const properties = function () {
                         return false;
                     }
                 } else if (checkedInputs.length > 1) {
-                    let listOfValues = [];
-                    checkedInputs.forEach((item) => {
-                        listOfValues.push(+item.value);
-                    });
-                    return listOfValues;
+                    return Array.from(checkedInputs).map((item) => +item.value);
                 } else {
                     return "";
                 }
@@ -611,23 +612,29 @@ const properties = function () {
         function getValue(elem) {
             if (elem.nodeName === "SELECT") {
                 return `${elem.value} ${elem.selectedOptions[0].text}`;
-            } else if (elem.nodeName === "UL") {
-                const checkedInputs = elem.querySelectorAll("input:checked");
+            } else if (
+                elem.querySelectorAll(
+                    'input[type="checkbox"], input[type="radio"]'
+                ).length > 0
+            ) {
+                // Ищем либо чекбоксы, либо радиокнопки
+                const checkedInputs = elem.querySelectorAll(
+                    'input[type="checkbox"]:checked, input[type="radio"]:checked'
+                );
 
                 if (checkedInputs.length === 1) {
                     return `${
                         checkedInputs[0].value
                     } ${checkedInputs[0].parentNode.textContent.trim()}`;
                 } else {
-                    let listOfValues = [];
-                    checkedInputs.forEach((item) => {
-                        listOfValues.push(
-                            `${
-                                item.value
-                            } ${item.parentNode.textContent.trim()}`
-                        );
-                    });
-                    return listOfValues.join(", ");
+                    return Array.from(checkedInputs)
+                        .map(
+                            (item) =>
+                                `${
+                                    item.value
+                                } ${item.parentNode.textContent.trim()}`
+                        )
+                        .join(", ");
                 }
             } else {
                 return elem.value;
@@ -742,71 +749,90 @@ const properties = function () {
     }
 
     function fillInPropValues(propCode, propValue) {
+        // Получаем все свойства на странице
         const allPropsOnPage = document.querySelectorAll(
-            // getting all properties on the page
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property id
-                '[id$="-attribute"]' + // trailing part of the property id
-                ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-attribute"])' // not a property
-        );
-        const allPropsOnPageValues = document.querySelectorAll(
-            // getting all property values on the page
-            '[id^="id_plumbing-attributevalue-content_type-object_id-"]' + // the initial part of the property values id
-                '[id$="-value"]' + // trailing part of the property values id
-                ':not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-value"])' // not a property value
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-attribute"]:not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-attribute"])'
         );
 
-        let numOfProp = 0; // number in order on a page
+        // Получаем все значения свойств на странице
+        const allPropsOnPageValues = document.querySelectorAll(
+            '[id^="id_plumbing-attributevalue-content_type-object_id-"][id$="-value"]:not([id="id_plumbing-attributevalue-content_type-object_id-__prefix__-value"])'
+        );
+
+        // Находим индекс нужного свойства
+        let numOfProp = 0;
         allPropsOnPage.forEach((prop, i) => {
             if (prop.value == propCode) {
                 numOfProp = i;
             }
         });
 
+        // Получаем форму (контейнер для ввода данных)
         const form = allPropsOnPageValues[numOfProp];
 
+        // Функция для снятия отметок с всех чекбоксов
         function uncheckCheckboxes() {
-            const checkedCheckboxes = form.querySelectorAll(
-                'input[type="checkbox"]:checked'
+            form.querySelectorAll('input[type="checkbox"]:checked').forEach(
+                (checkbox) => {
+                    checkbox.checked = false; // Убираем отметку
+                    checkbox.dispatchEvent(new Event("change")); // Генерируем событие изменения
+                }
             );
-            if (checkedCheckboxes[0]) {
-                checkedCheckboxes.forEach((checkbox) => {
-                    checkbox.checked = false;
-                });
-            }
         }
 
+        // Заполняем значение свойства, если оно не пустое
         if (propValue !== "") {
-            if (form && form.querySelector("li")) {
+            if (
+                form &&
+                form.querySelector(
+                    'input[type="radio"], input[type="checkbox"]'
+                )
+            ) {
+                // Если это радиокнопки (Да/Нет)
                 if (form.querySelector('input[type="radio"]')) {
                     const inputs = form.querySelectorAll('input[type="radio"]');
                     if (propValue === true) {
-                        inputs[0].click();
+                        inputs[0].checked = true; // Устанавливаем "Да"
                     } else {
-                        inputs[1].click();
+                        inputs[1].checked = true; // Устанавливаем "Нет"
                     }
+                    // Генерируем событие изменения
+                    inputs.forEach((input) =>
+                        input.dispatchEvent(new Event("change"))
+                    );
                 } else {
+                    // Если это чекбоксы (множественный выбор)
                     if (Array.isArray(propValue)) {
-                        uncheckCheckboxes();
-                        propValue.forEach((checkbox) => {
-                            form.querySelector(
-                                `input[type="checkbox"][value="${checkbox}"]`
-                            ).click();
+                        uncheckCheckboxes(); // Сначала снимаем выделение
+                        propValue.forEach((value) => {
+                            let checkbox = form.querySelector(
+                                `input[type="checkbox"][value="${value}"]`
+                            );
+                            if (checkbox) {
+                                checkbox.checked = true; // Выбираем нужные чекбоксы
+                                checkbox.dispatchEvent(new Event("change"));
+                            }
                         });
                     } else {
-                        uncheckCheckboxes();
-                        form.querySelector(
+                        uncheckCheckboxes(); // Сначала снимаем выделение
+                        let checkbox = form.querySelector(
                             `input[type="checkbox"][value="${propValue}"]`
-                        ).click();
+                        );
+                        if (checkbox) {
+                            checkbox.checked = true; // Выбираем один чекбокс
+                            checkbox.dispatchEvent(new Event("change"));
+                        }
                     }
                 }
             } else {
+                // Если это обычное поле ввода (числа, текст)
                 const changeEvent = new Event("change");
                 if (
                     form &&
                     Number(form.value.replace(",", ".")) !== +propValue
                 ) {
-                    form.value = propValue;
-                    form.dispatchEvent(changeEvent);
+                    form.value = propValue; // Устанавливаем значение
+                    form.dispatchEvent(changeEvent); // Генерируем событие изменения
                 }
             }
         }
